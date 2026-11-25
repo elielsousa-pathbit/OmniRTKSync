@@ -943,6 +943,16 @@ class EnderecosDoSaml(unittest.TestCase):
 class NovosRecursosDeSSO(unittest.TestCase):
     """Testa conexão OIDC/SAML, modo simultâneo (both), salvaguarda anti-lockout e desativação de senha."""
 
+    def test_campos_dos_dois_protocolos_ficam_fora_das_abas(self):
+        from omni_rtksync.render import render_sso_modal
+
+        modal = render_sso_modal({"saml_disponivel": True}, "pt")
+        antes_das_abas, _, abas = modal.partition('<ul class="nav nav-tabs')
+        for campo in ("base_url", "allowed_domains", "allowed_emails"):
+            seletor = f'name="{campo}"'
+            self.assertIn(seletor, antes_das_abas)
+            self.assertNotIn(seletor, abas)
+
     def test_teste_de_conexao_oidc_sem_emissor(self):
         ok, msg = sso.testar_conexao_oidc("")
         self.assertFalse(ok)

@@ -127,6 +127,19 @@ class IntegracaoComOBancoDoGatewayTest(unittest.TestCase):
         self.assertEqual(conexao["accessToken"], "novo-access")
         self.assertEqual(conexao["refreshToken"], "novo-refresh")
 
+    def test_a_escrita_preserva_o_cifrado_quando_a_chave_nao_confere(self) -> None:
+        for chave in ("", "outra-chave"):
+            with self.subTest(chave_configurada=bool(chave)):
+                os.environ["STORAGE_ENCRYPTION_KEY"] = chave
+                self.assertFalse(
+                    gateway.update_connection(self.db, "c1", "novo", "refresh", 1893456000000)
+                )
+                with sqlite3.connect(self.db) as conn:
+                    saved = conn.execute(
+                        "SELECT access_token, refresh_token FROM provider_connections WHERE id='c1'"
+                    ).fetchone()
+                self.assertEqual(saved, (INTEROP_NODE, None))
+
 
 if __name__ == "__main__":
     unittest.main()

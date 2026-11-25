@@ -23,7 +23,7 @@ and it never replaces the local user and password form.
 | [Entra ID and Okta](#entra-id-and-okta) | what changes for the other two |
 | [When the provider goes down](#when-the-provider-goes-down) | four ways back in, in order of effort |
 | [What is checked on the way back](#what-is-checked-on-the-way-back) | the list, and why each item is on it |
-| [SAML 2.0](#saml-20-is-not-in-this-version) | why the tab is greyed out |
+| [SAML 2.0](#saml-20) | optional container build and Keycloak setup |
 
 ---
 
@@ -184,24 +184,19 @@ Every one of these refusals has a test that exercises it with bad input, in
 
 ---
 
-## SAML 2.0 is not in this version
+## SAML 2.0
 
-The tab is there, the fields are there, and they are disabled. This is a technical limit, not a
-missing afternoon of work.
+The panel uses the Python `saml` extra. Build the container with the extra from the repository root.
 
-SAML signs over *Exclusive XML Canonicalization 1.0*. The Python standard library canonicalises XML
-too — but with C14N 2.0, a different algorithm, which makes every valid signature look invalid. The
-standard library also has no RSA verification at all, and its XML parser does not defend against
-signature wrapping, the attack specific to this protocol, where a signed assertion is moved
-elsewhere in the document and a forged one takes its place.
+```bash
+docker build --build-arg ENABLE_SAML=1 -t omnirtksync:saml .
+```
 
-Writing that by hand produces validation that appears to work and accepts forged assertions in
-silence. So SAML support waits for a library: `python3-saml` is declared in `pyproject.toml` under
-the optional `saml` extra, and the image will need `libxml2`, `libxslt` and `xmlsec` before it can
-be enabled. Until then the panel refuses to turn it on, and says so.
+Set `image: omnirtksync:saml` for the sync service in Compose. The standard image offers OIDC.
 
-Also out of scope for this version, and deliberately: federated logout, and encrypted SAML
-assertions.
+The [Docker Keycloak example](https://github.com/pathbit/9RTKSync/tree/master/examples/saml-keycloak) registers all three test panels. In that example, the realm descriptor is at `http://localhost:19557/realms/rtksync-lab/protocol/saml/descriptor`.
+
+In Keycloak, create a SAML client with the panel entity ID at `/sso/saml/metadata` and the POST endpoint at `/sso/saml/acs`. Enable signatures for both the response and assertion, use an email-format NameID and leave the assertion unencrypted. Disable **Client signature required** for this client. The panel sends its AuthnRequest over HTTP-Redirect. Copy the IdP entity ID, HTTP-Redirect SSO URL and signing certificate from the realm descriptor. Enter them in the panel along with its base URL and the email or domain allowlist. Authenticated operators can download the SP metadata.
 
 ---
 
@@ -391,23 +386,19 @@ Cada uma dessas recusas tem um teste que a exercita com entrada ruim, em
 
 ---
 
-## SAML 2.0 não está nesta versão
+## SAML 2.0 no painel
 
-A aba existe, os campos existem, e estão desabilitados. É um limite técnico, não uma tarde de
-trabalho que faltou.
+O painel usa o extra `saml` do Python. Para ativá-lo no contêiner, execute na raiz:
 
-O SAML assina sobre *Exclusive XML Canonicalization 1.0*. A biblioteca padrão do Python também
-canonicaliza XML — mas em C14N 2.0, outro algoritmo, o que faz toda assinatura válida parecer
-inválida. A biblioteca padrão também não tem verificação RSA nenhuma, e o analisador de XML dela não
-se defende de *signature wrapping*, o ataque específico deste protocolo, em que a asserção assinada
-é movida para outro ponto do documento e uma falsa ocupa o lugar lido.
+```bash
+docker build --build-arg ENABLE_SAML=1 -t omnirtksync:saml .
+```
 
-Escrever isso à mão produz uma validação que parece funcionar e aceita asserção forjada em silêncio.
-Então o suporte a SAML espera uma biblioteca: `python3-saml` está declarado no `pyproject.toml` como
-extra opcional `saml`, e a imagem precisará de `libxml2`, `libxslt` e `xmlsec` antes que ele possa
-ser ligado. Até lá o painel recusa ligá-lo, e diz isso.
+No serviço do sincronizador do Compose, use `image: omnirtksync:saml`. A imagem padrão mantém apenas a opção OIDC.
 
-Também fora de escopo nesta versão, por decisão: logout federado e asserção SAML criptografada.
+O [exemplo Keycloak em Docker](https://github.com/pathbit/9RTKSync/tree/master/examples/saml-keycloak) registra os três painéis de teste. Nesse exemplo, o descritor do realm está em `http://localhost:19557/realms/rtksync-lab/protocol/saml/descriptor`.
+
+No Keycloak, crie um cliente SAML com o Entity ID do painel em `/sso/saml/metadata` e a URL de POST em `/sso/saml/acs`. Habilite a assinatura da resposta e da asserção, selecione NameID no formato e-mail e deixe a asserção sem criptografia. Desative **Client signature required** nesse cliente. O painel envia a AuthnRequest por HTTP-Redirect. Copie do descritor público do realm o Entity ID, a URL de SSO HTTP-Redirect e o certificado de assinatura. No painel, preencha esses campos, a URL base e a lista de e-mails ou domínios permitidos. O painel disponibiliza os metadados do SP a operadores autenticados.
 
 ---
 

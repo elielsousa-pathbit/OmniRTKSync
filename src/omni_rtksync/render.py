@@ -1651,9 +1651,6 @@ def render_sso_modal(
     )
 
     aba_oidc = f"""
-              {_campo_de_texto("base_url", translate("sso.base_url", lang),
-                               base_url, translate("sso.base_url_help", lang),
-                               "https://painel.exemplo.com")}
               {bloco_callback}
               {_campo_de_texto("issuer", translate("sso.issuer", lang),
                                issuer, translate("sso.issuer_help", lang),
@@ -1670,11 +1667,6 @@ def render_sso_modal(
               </div>
               {_campo_de_texto("scopes", translate("sso.scopes", lang),
                                scopes, translate("sso.scopes_help", lang))}
-              {_campo_de_texto("allowed_domains", translate("sso.allowed_domains", lang),
-                               allowed_domains,
-                               translate("sso.allowlist_help", lang), "empresa.com,filial.com")}
-              {_campo_de_texto("allowed_emails", translate("sso.allowed_emails", lang),
-                               allowed_emails, "", "chefe@empresa.com")}
               <div class="d-flex align-items-center gap-2 mt-3">
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="btnTestarOIDC">
                   <i class="bi bi-broadcast me-1" aria-hidden="true"></i>{esc(translate("sso.test_oidc", lang))}
@@ -1759,6 +1751,14 @@ def render_sso_modal(
                 </div>
               </div>
             </div>
+            {_campo_de_texto("base_url", translate("sso.base_url", lang),
+                             base_url, translate("sso.base_url_help", lang),
+                             "https://painel.exemplo.com")}
+            {_campo_de_texto("allowed_domains", translate("sso.allowed_domains", lang),
+                             allowed_domains,
+                             translate("sso.allowlist_help", lang), "empresa.com,filial.com")}
+            {_campo_de_texto("allowed_emails", translate("sso.allowed_emails", lang),
+                             allowed_emails, "", "chefe@empresa.com")}
             <ul class="nav nav-tabs mb-3" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active" type="button" role="tab"
