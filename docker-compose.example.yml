@@ -29,6 +29,7 @@ services:
       # recusa subir ate que as duas variaveis estejam definidas no .env.
       - INITIAL_PASSWORD=${INITIAL_PASSWORD:?defina INITIAL_PASSWORD no .env}
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no .env (openssl rand -hex 32)}
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-}
       - REQUIRE_API_KEY=false
       # REQUIRE_LOGIN=false so e aceitavel porque a porta acima esta presa em
       # 127.0.0.1. Ao expor 20128 na rede, mude para true.
@@ -73,6 +74,8 @@ services:
     environment:
       - HOST_HOME=/root/host
       - DB_PATH=/app/data/storage.sqlite
+      # A chave precisa coincidir com a usada pelo OmniRoute no volume compartilhado.
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-}
       - OMNIROUTE_URL=${OMNIROUTE_URL:-http://omnirtk-router:20128}
       - SYNC_INTERVAL=${SYNC_INTERVAL:-300}
       - REFRESH_MARGIN=${REFRESH_MARGIN:-900}

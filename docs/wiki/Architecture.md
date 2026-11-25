@@ -121,15 +121,11 @@ Written next to the database (or `DATA_DIR`), never inside the gateway's schema:
 
 ## Encryption at rest
 
-OmniRoute encrypts `access_token`, `refresh_token` and `api_key` in place, prefixing the stored
-value with `enc:v1:` (`src/lib/db/encryption.ts`). The synchronizer writes plaintext, and that is
-safe on purpose: `decrypt()` returns any value without the prefix unchanged — the path it labels
-"legacy plaintext or passthrough mode" — and the gateway re-encrypts the row on its next write.
+OmniRoute can encrypt `access_token`, `refresh_token` and `api_key` in place, prefixing the stored
+value with `enc:v1:` (`src/lib/db/encryption.ts`). Set `STORAGE_ENCRYPTION_KEY` in the Compose
+environment to pass the same key to OmniRoute and OmniRTKSync. The synchronizer can then read
+encrypted credentials and write renewed tokens in the gateway's format.
 
-Two consequences worth knowing:
-
-- A token this synchronizer wrote shows up in the database as plaintext until OmniRoute touches
-  the row again. That is not a leak of anything new: whoever can read `storage.sqlite` could
-  already read the decryption key next to it.
-- Never write a value that already starts with `enc:v1:` back as if it were a token. It is
-  ciphertext, not a credential, and `encrypt()` deliberately refuses to double-encrypt it.
+The synchronizer preserves legacy plaintext reads. When an existing token cannot be decrypted,
+the credential check reports it as unverifiable and an update preserves the stored ciphertext.
+A value with the `enc:v1:` prefix is already ciphertext and the encryption helper leaves it intact.

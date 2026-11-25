@@ -152,6 +152,10 @@ def encrypt(value: str, *, secret: str | None = None) -> str:
     return f"{ENC_PREFIX}{iv.hex()}:{ciphertext.hex()}:{tag.hex()}"
 
 
+def _credenciais_podem_ser_substituidas(*stored_values: object) -> bool:
+    return all(not is_encrypted(value) or decrypt(value) is not None for value in stored_values)
+
+
 # ---------------------------------------------------------------------------
 # Banco do gateway: leitura e mutação segura do SQLite
 # ---------------------------------------------------------------------------
@@ -371,16 +375,23 @@ def update_connection(
     conn = get_db_connection(db_path)
     tbl = detect_connection_table(conn)
     now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    # A escrita volta cifrada no mesmo formato do gateway (enc:v1) quando a
-    # chave esta presente; sem ela, passthrough em claro, como o gateway faz.
+    # Um banco legado aceita valores em claro. Uma credencial já cifrada só
+    # pode ser substituída quando conseguimos validar a chave em uso.
     access_token = encrypt(access_token)
     refresh_token = encrypt(refresh_token)
     try:
         cursor = conn.cursor()
+        cursor.execute("BEGIN IMMEDIATE")
         cursor.execute(f"PRAGMA table_info({tbl})")
         cols = [c["name"] for c in cursor.fetchall()]
 
         if "access_token" in cols:
+            cursor.execute(
+                f"SELECT access_token, refresh_token FROM {tbl} WHERE id = ?", (connection_id,)
+            )
+            anteriores = cursor.fetchone()
+            if anteriores is None or not _credenciais_podem_ser_substituidas(*anteriores):
+                return False
             # Tabela relacional do gateway (provider_connections).
             #
             # expires_at é uma coluna TEXT e o gateway a lê com `new Date(...)`
@@ -440,6 +451,8 @@ def update_connection(
                     d = json.loads(row["data"])
                 except Exception:
                     pass
+            if not _credenciais_podem_ser_substituidas(d.get("accessToken"), d.get("refreshToken")):
+                return False
             d["accessToken"] = access_token
             if refresh_token:
                 d["refreshToken"] = refresh_token

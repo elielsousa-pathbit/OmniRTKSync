@@ -25,14 +25,14 @@ Three containers, none of which touch the internet:
 
 | Container | Address | Role |
 | :--- | :--- | :--- |
-| `omnirtk-proxy-a` | `172.32.0.11` | an HTTP proxy |
-| `omnirtk-proxy-b` | `172.32.0.12` | a second one, so "went through *a* proxy" and "went through *this* proxy" can be told apart |
-| `omnirtk-echo` | `172.32.0.20` | the referee: answers with the source address it saw |
+| `omnirtk-proxy-a` | `10.77.32.11` | an HTTP proxy |
+| `omnirtk-proxy-b` | `10.77.32.12` | a second one, so "went through *a* proxy" and "went through *this* proxy" can be told apart |
+| `omnirtk-echo` | `10.77.32.20` | the referee: answers with the source address it saw |
 
 The referee is what makes this verifiable. It returns JSON:
 
 ```json
-{"seen_from": "172.32.0.11", "via": "1.1 squid/6.13", "forwarded_for": "172.32.0.2"}
+{"seen_from": "10.77.32.11", "via": "1.1 squid/6.13", "forwarded_for": "10.77.32.2"}
 ```
 
 `seen_from` is the whole point — no guessing, no third-party IP service, no
@@ -62,13 +62,13 @@ docker network connect omnirtk-egress-net <gateway-container>
 # 2. register the pool through the gateway's own API
 curl -s -X POST http://127.0.0.1:8082/api/settings/proxies \
   -H 'Content-Type: application/json' \
-  -d '{"name":"bench","proxyUrl":"http://172.32.0.11:3128","isActive":true,"strictProxy":true}'
+  -d '{"name":"bench","proxyUrl":"http://10.77.32.11:3128","isActive":true,"strictProxy":true}'
 
 # 3. bind it to a connection, then watch the proxy log while traffic flows
 docker logs -f omnirtk-proxy-a
 ```
 
-A line like `172.32.0.2 TCP_TUNNEL/200 CONNECT api.provider.com:443` is the
+A line like `10.77.32.2 TCP_TUNNEL/200 CONNECT api.provider.com:443` is the
 gateway's container address going through the proxy — the binding works.
 
 Then stop the proxy and send traffic again. **If the request still succeeds, the
@@ -79,7 +79,7 @@ gateway fell back to direct.**
 Against a running OmniRoute (read on 2026-09-12):
 
 - the pool binding works: `docker logs omnirtk-proxy-a` showed
-  `172.32.0.2 TCP_TUNNEL/200 CONNECT google.com:443`, where `172.32.0.2` is the
+  `10.77.32.2 TCP_TUNNEL/200 CONNECT google.com:443`, where `10.77.32.2` is the
   gateway's container;
 - the **pool test path** detects a dead proxy correctly:
   `{"ok":false,"error":"Proxy test timed out"}`.
@@ -136,7 +136,7 @@ decisão **do gateway**, configure o proxy nele e deixe-o fazer a requisição:
 conecte o container do gateway à rede da bancada, cadastre o pool pela API dele,
 vincule a uma conexão e acompanhe `docker logs -f omnirtk-proxy-a`.
 
-Uma linha como `172.32.0.2 TCP_TUNNEL/200 CONNECT api.provider.com:443` é o
+Uma linha como `10.77.32.2 TCP_TUNNEL/200 CONNECT api.provider.com:443` é o
 endereço do container do gateway passando pelo proxy — o vínculo funciona.
 
 Depois derrube o proxy e gere tráfego de novo. **Se a requisição ainda for
@@ -147,7 +147,7 @@ atendida, o gateway caiu para saída direta.**
 Contra um OmniRoute em execução (lido em 12/09/2026):
 
 - o vínculo do pool funciona: o log do proxy registrou
-  `172.32.0.2 TCP_TUNNEL/200 CONNECT google.com:443`;
+  `10.77.32.2 TCP_TUNNEL/200 CONNECT google.com:443`;
 - o **caminho de teste do pool** detecta um proxy morto corretamente:
   `{"ok":false,"error":"Proxy test timed out"}`.
 
